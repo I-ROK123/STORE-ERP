@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 
 import { Plus, Search, Filter, Download } from 'lucide-react';
@@ -7,14 +7,107 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 
 const InventoryManagement = () => {
-  const [inventory] = useState([
-    { id: 1, barcode: 'MLK001', category: 'Dairy', subCategory: 'Milk', brand: 'Molo', quantity: 50, threshold: 20, price: 120 },
-    { id: 2, barcode: 'YGT001', category: 'Dairy', subCategory: 'Yoghurt', brand: 'Brookside', quantity: 30, threshold: 15, price: 85 }
-  ]);
+  
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  
+    // Define the inventory state with initial data
+    const [inventory, setInventory] = useState([
+      { 
+        id: 1, 
+        barcode: 'MLK001', 
+        category: 'Dairy', 
+        subCategory: 'Milk', 
+        brand: 'Molo', 
+        quantity: 50, 
+        threshold: 20, 
+        price: 120 
+      },
+      { 
+        id: 2, 
+        barcode: 'YGT001', 
+        category: 'Dairy', 
+        subCategory: 'Yoghurt', 
+        brand: 'Brookside', 
+        quantity: 30, 
+        threshold: 15, 
+        price: 85 
+      }
+    ]);
+
+    // Add useEffect to fetch data from API when component mounts
+    useEffect(() => {
+      const fetchInventory = async () => {
+        try {
+          const response = await fetch('http://localhost:5000/api/inventory');
+          const data = await response.json();
+          setInventory(data);
+        } catch (error) {
+          console.error('Error fetching inventory:', error);
+        }
+      };
+  
+      fetchInventory();
+    }, []);
+  
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Header */}<div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b">
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Barcode</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Category</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Sub-Category</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Brand</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Quantity</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Threshold</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Price (KSH)</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.map((item) => (
+              <tr key={item.id} className="border-b hover:bg-gray-50">
+                <td className="px-4 py-3 text-sm">{item.barcode}</td>
+                <td className="px-4 py-3 text-sm">{item.category}</td>
+                <td className="px-4 py-3 text-sm">{item.subCategory}</td>
+                <td className="px-4 py-3 text-sm">{item.brand}</td>
+                <td className={`px-4 py-3 text-sm ${
+                  item.quantity <= item.threshold ? 'text-red-600' : ''
+                }`}>
+                  {item.quantity}
+                </td>
+                <td className="px-4 py-3 text-sm">{item.threshold}</td>
+                <td className="px-4 py-3 text-sm">{item.price}</td>
+                <td className="px-4 py-3 text-sm">
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    item.quantity <= item.threshold ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                  }`}>
+                    {item.quantity <= item.threshold ? 'Low Stock' : 'In Stock'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Inventory Management</h1>
         <Button className="bg-blue-600">
