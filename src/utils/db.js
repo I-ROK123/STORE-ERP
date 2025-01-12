@@ -1,4 +1,18 @@
 import mysql from 'mysql2/promise';
+const dbConfig = require('../config/db.config');
+
+const pool = mysql.createPool(dbConfig);
+
+pool.getConnection()
+  .then(connection => {
+    console.log('Database connected successfully');
+    connection.release();
+  })
+  .catch(error => {
+    console.error('Database connection failed:', error);
+  });
+
+module.exports = pool;
 
 const createDBConnection = async () => {
   try {

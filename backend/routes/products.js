@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
+const Product = require('../models/Product');
 
 const dbConfig = {
   host: 'localhost',
@@ -11,6 +12,40 @@ const dbConfig = {
 };
 
 const pool = mysql.createPool(dbConfig);
+
+router.get('/count', async (req, res) => {
+  try {
+      const count = await Product.getProductCount();
+      res.json({ count });
+  } catch (error) {
+      console.error('Error getting product count:', error);
+      res.status(500).json({ error: 'Failed to get product count' });
+  }
+});
+
+router.get('/low-stock', async (req, res) => {
+  try {
+      const threshold = parseInt(req.query.threshold) || 10;
+      const items = await Product.getLowStockProducts(threshold);
+      res.json({ items });
+  } catch (error) {
+      console.error('Error getting low stock products:', error);
+      res.status(500).json({ error: 'Failed to get low stock products' });
+  }
+});
+
+router.get('/stock-movement', async (req, res) => {
+  try {
+      const { period = '30d' } = req.query;
+      const data = await Product.getStockMovement(period);
+      res.json({ data });
+  } catch (error) {
+      console.error('Error getting stock movement:', error);
+      res.status(500).json({ error: 'Failed to get stock movement' });
+  }
+});
+
+module.exports = router;
 
 // Get all products
 router.get('/', async (req, res) => {

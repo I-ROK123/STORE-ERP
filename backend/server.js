@@ -1,32 +1,59 @@
+// backend/server.js
+require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2/promise');
 const cors = require('cors');
-const productRoutes = require('./routes/products.js');
-const salesRoutes = require('./routes/sales.js');
+const productsRouter = require('./routes/products');
+const salesRouter = require('./routes/sales');
+const mpesaRouter = require('./routes/mpesa');
+const dashboardRouter = require('./routes/dashboard');
+const pool = require('./utils/db');
+const mpesaRoutes = require('./routes/mpesa');
+const usersRoutes = require('./routes/users');
+const settingsRouter = require('./routes/Settings');
+const mpesaConfig = {
+  consumerKey: process.env.MPESA_CONSUMER_KEY,
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET,
+  passkey: process.env.MPESA_PASSKEY,
+  shortcode: process.env.MPESA_SHORTCODE,
+  environment: process.env.MPESA_ENVIRONMENT || 'sandbox'
+};
+
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+// Middleware
+app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:3000', // Your React app's URL
+  origin: 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
-app.use(express.json());
 
-// Database configuration
-const dbConfig = {
-  host: 'localhost',
-  user: 'app_user',
-  password: 'secure_password',
-  database: 'store_erp'
-};
+// Log M-Pesa configuration
+console.log('Initializing M-Pesa Service with config:', {
+  consumerKey: process.env.MPESA_CONSUMER_KEY,
+  consumerSecret: '***hidden***',
+  passkey: process.env.MPESA_PASSKEY,
+  shortcode: process.env.MPESA_SHORTCODE,
+  environment: process.env.MPESA_ENVIRONMENT
+});
 
-const pool = mysql.createPool(dbConfig);
+app.use('/api/users', usersRoutes);
+app.use('/api/settings', settingsRouter);
 
-// Routes
-app.use('/api/products', productRoutes);
-app.use('/api/sales', salesRoutes);
+// Router-based Routes
+app.use('/api/products', productsRouter);
+app.use('/api/sales', salesRouter);
+app.use('/api/mpesa', mpesaRouter);
+app.use('/api/dashboard', dashboardRouter);
 
+mpesaRoutes.setConfig(mpesaConfig);
+
+
+
+
+// Direct Routes
 app.get('/api/inventory', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -56,7 +83,6 @@ app.get('/api/inventory', async (req, res) => {
   }
 });
 
-// Get all categories
 app.get('/api/categories', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM categories');
@@ -67,7 +93,6 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-// Get all brands
 app.get('/api/brands', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM brands');
@@ -91,12 +116,10 @@ app.post('/api/inventory', async (req, res) => {
       reorder_level
     } = req.body;
 
-    // Validate required fields
     if (!name || !category_id || !brand_id || !unit_price || !stock_quantity || !reorder_level) {
       return res.status(400).json({ error: 'All fields except description are required' });
     }
 
-    // Convert string values to numbers where needed
     const numericValues = {
       category_id: parseInt(category_id),
       brand_id: parseInt(brand_id),
@@ -107,17 +130,9 @@ app.post('/api/inventory', async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO products (
-        barcode,
-        name,
-        description,
-        category_id,
-        brand_id,
-        unit_price,
-        stock_quantity,
-        reorder_level,
-        is_active,
-        created_at,
-        updated_at
+        barcode, name, description, category_id, brand_id,
+        unit_price, stock_quantity, reorder_level, is_active,
+        created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
       [
         barcode,
@@ -148,8 +163,6 @@ app.delete('/api/inventory/:id', async (req, res) => {
       [id]
     );
     
-    console.log('Delete result:', result);
-    
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -177,14 +190,9 @@ app.put('/api/inventory/:id', async (req, res) => {
 
     const [result] = await pool.query(
       `UPDATE products 
-       SET barcode = ?,
-           name = ?,
-           description = ?,
-           category_id = ?,
-           brand_id = ?,
-           unit_price = ?,
-           stock_quantity = ?,
-           reorder_level = ?,
+       SET barcode = ?, name = ?, description = ?,
+           category_id = ?, brand_id = ?, unit_price = ?,
+           stock_quantity = ?, reorder_level = ?,
            updated_at = NOW()
        WHERE product_id = ?`,
       [
@@ -211,6 +219,14 @@ app.put('/api/inventory/:id', async (req, res) => {
   }
 });
 
+// Health check endpoints
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/test-db', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM products LIMIT 1');
@@ -221,7 +237,15 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-const PORT = 5000;
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ 
+    error: err.message || 'Internal Server Error'
+  });
+});
+
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

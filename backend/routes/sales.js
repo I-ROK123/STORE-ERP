@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
+const Sale = require('../models/Sale.js');
 
 const dbConfig = {
   host: 'localhost',
@@ -11,6 +12,32 @@ const dbConfig = {
 };
 
 const pool = mysql.createPool(dbConfig);
+
+
+router.get('/total', async (req, res) => {
+  try {
+      const total = await Sale.getTotalSales();
+      res.json({ total });
+  } catch (error) {
+      console.error('Error getting total sales:', error);
+      res.status(500).json({ error: 'Failed to get total sales' });
+  }
+});
+
+router.get('/trend', async (req, res) => {
+  try {
+      const { period = '30d' } = req.query;
+      const data = await Sale.getSalesTrend(period);
+      res.json({ data });
+  } catch (error) {
+      console.error('Error getting sales trend:', error);
+      res.status(500).json({ error: 'Failed to get sales trend' });
+  }
+});
+
+module.exports = router;
+
+
 
 // Create new sale
 router.post('/', async (req, res) => {

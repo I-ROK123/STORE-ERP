@@ -1,13 +1,47 @@
-import React from 'react';
-import { useState } from 'react';
-import { Card, CardContent } from './components/ui/card';
-import { LayoutDashboard, Package, Receipt, Users, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, 
+  Package, 
+  Receipt, 
+  Users as UsersIcon, 
+  Settings, 
+  LogOut 
+} from 'lucide-react';
 import InventoryManagement from './components/InventoryManagement';
 import SalesManagement from './components/SalesManagement';
-
+import Dashboard from './components/Dashboard';
+import UsersManagement from './components/Users';
+import Login from './components/Login';
+import Setting from './components/Settings'; // Import matches the file name
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (token && userData) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const handleLogin = (token, userData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setIsAuthenticated(true);
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+    setActiveTab('dashboard');
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -15,34 +49,28 @@ const App = () => {
         return <InventoryManagement />;
       case 'sales':
         return <SalesManagement />;
+      case 'users':
+        return <UsersManagement />;
+      case 'settings':          // Changed from 'Settings' to 'settings' to match navItems
+        return <Setting />;     // Component name matches the import
+      case 'dashboard':
+        return <Dashboard />;
       default:
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold">Total Sales</h2>
-                  <p className="text-3xl mt-2">KSH 45,678</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold">Products</h2>
-                  <p className="text-3xl mt-2">234</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold">Low Stock</h2>
-                  <p className="text-3xl mt-2 text-red-600">12</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        );
+        return <Dashboard />;
     }
   };
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'sales', label: 'Sales', icon: Receipt },
+    ...(user?.role === 'admin' ? [{ id: 'users', label: 'Users', icon: UsersIcon }] : []),
+    { id: 'settings', label: 'Settings', icon: Settings }
+  ];
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -50,45 +78,33 @@ const App = () => {
       <nav className="w-64 bg-white shadow-lg">
         <div className="p-4">
           <h1 className="text-xl font-bold mb-6">Store ERP</h1>
+          {/* User info */}
+          <div className="mb-6 p-3 bg-gray-50 rounded">
+            <p className="font-medium">{user.fullName}</p>
+            <p className="text-sm text-gray-500">{user.role}</p>
+          </div>
           <div className="space-y-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center gap-2 w-full p-2 rounded transition-colors duration-200 ${
+                  activeTab === item.id
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.label}
+              </button>
+            ))}
+            {/* Logout button */}
             <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 w-full p-2 rounded ${
-                activeTab === 'dashboard' ? 'bg-blue-50 text-blue-600' : ''
-              }`}
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full p-2 rounded text-red-600 hover:bg-red-50"
             >
-              <LayoutDashboard className="w-5 h-5" />
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('inventory')}
-              className={`flex items-center gap-2 w-full p-2 rounded ${
-                activeTab === 'inventory' ? 'bg-blue-50 text-blue-600' : ''
-              }`}
-            >
-              <Package className="w-5 h-5" />
-              Inventory
-            </button>
-            <button
-              onClick={() => setActiveTab('sales')}
-              className={`flex items-center gap-2 w-full p-2 rounded ${
-                activeTab === 'sales' ? 'bg-blue-50 text-blue-600' : ''
-              }`}
-            >
-              <Receipt className="w-5 h-5" />
-              Sales
-            </button>
-            <button
-              className="flex items-center gap-2 w-full p-2 rounded"
-            >
-              <Users className="w-5 h-5" />
-              Users
-            </button>
-            <button
-              className="flex items-center gap-2 w-full p-2 rounded"
-            >
-              <Settings className="w-5 h-5" />
-              Settings
+              <LogOut className="w-5 h-5" />
+              Logout
             </button>
           </div>
         </div>

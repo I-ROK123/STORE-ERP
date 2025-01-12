@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Printer, CreditCard, Loader2 } from 'lucide-react';
+import { Search, ShoppingCart, Printer, CreditCard, Loader2, Banknote } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "../components/ui/dialog";
 
 const SalesManagement = () => {
@@ -22,6 +23,75 @@ const SalesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastSale, setLastSale] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showMpesaDialog, setShowMpesaDialog] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+
+
+// SalesManagement.jsx
+const validateAndFormatPhone = (phone) => {
+  // Remove any non-digits
+  let cleaned = phone.replace(/\D/g, '');
+  
+  // Check if it's a valid Kenyan phone number
+  if (cleaned.length === 9) {
+    cleaned = '0' + cleaned;
+  } else if (cleaned.length === 10 && cleaned.startsWith('0')) {
+    // Valid format already
+  } else if (cleaned.length === 12 && cleaned.startsWith('254')) {
+    cleaned = '0' + cleaned.slice(3);
+  } else {
+    return false;
+  }
+  
+  return cleaned;
+};
+const handleMpesaPayment = async () => {
+  try {
+    const formattedPhone = validateAndFormatPhone(phoneNumber);
+    if (!formattedPhone) {
+      setPhoneError('Please enter a valid phone number (e.g., 0712345678)');
+      return;
+    }
+    setPhoneError('');
+    setIsProcessingPayment(true);
+
+    const response = await fetch('http://localhost:5000/api/mpesa/stkpush', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phoneNumber: formattedPhone,
+        amount: total,
+        orderId: Date.now().toString()
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || data.details || 'Payment failed');
+    }
+
+    alert('Please check your phone for the STK push notification');
+    await completeSale('M-Pesa');
+    setShowMpesaDialog(false);
+    setShowReceiptDialog(true);
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Payment failed: ' + error.message);
+  } finally {
+    setIsProcessingPayment(false);
+  }
+};
+
+
+
+
 
   // Functions
   const fetchRecentSales = async () => {
@@ -138,7 +208,7 @@ const SalesManagement = () => {
         total: parseFloat(total),
         paymentMethod
       };
-
+  
       const response = await fetch('http://localhost:5000/api/sales', {
         method: 'POST',
         headers: {
@@ -146,25 +216,27 @@ const SalesManagement = () => {
         },
         body: JSON.stringify(saleData),
       });
-
+  
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to complete sale');
       }
-
+  
       setLastSale({
         paymentMethod,
         transactionId: data.id,
         timestamp: new Date().toISOString()
       });
-
+  
       setCart([]);
-      fetchProducts();
-      fetchRecentSales();
+      await fetchProducts(); // Refresh products
+      await fetchRecentSales(); // Refresh sales list
+      
+      return true; // Indicate success
     } catch (err) {
       console.error('Sale error details:', err);
-      alert(`Failed to complete sale: ${err.message}`);
+      throw err; // Propagate error to be handled by caller
     }
   };
 
@@ -229,9 +301,9 @@ const SalesManagement = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6" style={{ height: "calc(100vh - 2rem)" }}>
       {/* Products Section */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="lg:col-span-2 flex flex-col gap-6">
         <div className="flex gap-4">
           <Input 
             placeholder="Scan barcode or search product..." 
@@ -243,12 +315,13 @@ const SalesManagement = () => {
             <Search className="w-4 h-4" />
           </Button>
         </div>
-
-        <Card className="h-96 overflow-y-auto">
-          <CardHeader>
+        
+  
+        <Card className="flex-1 min-h-0">
+          <CardHeader className="border-b">
             <CardTitle>Products</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-[calc(100%-5rem)] overflow-auto">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin" />
@@ -275,20 +348,20 @@ const SalesManagement = () => {
           </CardContent>
         </Card>
       </div>
-
+  
       {/* Cart and Recent Sales Section */}
-      <div className="space-y-6">
+      <div className="flex flex-col space-y-6">
         {/* Cart Card */}
-        <Card>
-          <CardHeader>
+        <Card className="flex-1 h-64">
+          <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               Current Sale
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-64">
             <div className="space-y-4">
-              <div className="h-64 overflow-y-auto">
+              <div className=" h-64 overflow-y-auto" >
                 {cart.map((item, index) => (
                   <div 
                     key={`cart-${item.product_id}-${index}`}
@@ -324,7 +397,7 @@ const SalesManagement = () => {
                   </div>
                 ))}
               </div>
-
+  
               <div className="pt-4 border-t">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
@@ -332,92 +405,157 @@ const SalesManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  className="w-full bg-blue-600"
-                  onClick={() => completeSale('M-Pesa')}
-                  disabled={cart.length === 0}
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  M-Pesa
-                </Button>
-                <Button 
-                  className="w-full"
-                  onClick={() => completeSale('Cash')}
-                  disabled={cart.length === 0}
-                >
-                  Cash
-                </Button>
-              </div>
-
+              {/* check out button*/}
               <Button 
-                className="w-full bg-gray-100 text-gray-700"
+                className="w-full h-12 text-lg bg-blue-600"
+                onClick={() => setShowPayment(true)}
                 disabled={cart.length === 0}
-                onClick={printReceipt}
               >
-                <Printer className="w-4 h-4 mr-2" />
-                Print Receipt
+                Checkout
               </Button>
             </div>
           </CardContent>
         </Card>
-
+  
         {/* Recent Sales Card */}
-        <Card>
-          <CardHeader>
+        <Card className="flex-1 min-h-0">
+          <CardHeader className="border-b">
             <CardTitle>Recent Sales</CardTitle>
           </CardHeader>
-          <CardContent>
-
+          <CardContent className="h-[calc(100%-5rem)] overflow-auto">
             <div className="space-y-2">
-       
-{recentSales.map((sale) => {
-  // Handle items count safely
-  const itemsCount = Array.isArray(sale.items) 
-    ? sale.items.length 
-    : (typeof sale.items === 'string' 
-      ? JSON.parse(sale.items).length 
-      : 0);
-
-  return (
-    <div
-      key={sale.id}
-      className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-      onClick={() => viewSaleDetails(sale)}
-    >
-      <div>
-        <div className="font-medium">KSH {Number(sale.total).toFixed(2)}</div>
-        <div className="text-sm text-gray-500">
-          {new Date(sale.created_at).toLocaleString()} • {itemsCount} items
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-sm px-2 py-1 rounded ${
-          sale.payment_method === 'M-Pesa' 
-            ? 'bg-blue-100 text-blue-600' 
-            : 'bg-green-100 text-green-600'
-        }`}>
-          {sale.payment_method}
-        </span>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            printPastSale(sale);
-          }}
-        >
-          <Printer className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  );
-})}
+              {recentSales.map((sale) => {
+                const itemsCount = Array.isArray(sale.items) 
+                  ? sale.items.length 
+                  : (typeof sale.items === 'string' 
+                    ? JSON.parse(sale.items).length 
+                    : 0);
+  
+                return (
+                  <div
+                    key={sale.id}
+                    className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
+                    onClick={() => viewSaleDetails(sale)}
+                  >
+                    <div>
+                      <div className="font-medium">KSH {Number(sale.total).toFixed(2)}</div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(sale.created_at).toLocaleString()} • {itemsCount} items
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm px-2 py-1 rounded ${
+                        sale.payment_method === 'M-Pesa' 
+                          ? 'bg-blue-100 text-blue-600' 
+                          : 'bg-green-100 text-green-600'
+                      }`}>
+                        {sale.payment_method}
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          printPastSale(sale);
+                        }}
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
-        <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
-  <DialogContent className="max-w-md">
+  
+        {/* Payment Dialog */}
+
+<Dialog open={showPayment} onOpenChange={setShowPayment}>
+  <DialogContent className="bg-white max-w-sm">
+    <DialogHeader>
+      <DialogTitle className="text-xl text-center">Select Payment Method</DialogTitle>
+    </DialogHeader>
+    <div className="pt-4">
+      <div className="text-center text-2xl font-bold mb-8">
+        Total: KSH {total.toFixed(2)}
+      </div>
+      <div className="flex flex-col gap-4">
+    {/*}  <Input
+    type="tel"
+    placeholder="Enter M-Pesa phone number"
+    value={phoneNumber}
+    onChange={(e) => setPhoneNumber(e.target.value)}
+  />*/}
+        <Button 
+          className="w-full py-8 text-lg bg-white border-2 border-blue-600 hover:bg-blue-50 text-blue-600"
+          onClick={()=> {
+              setShowPayment(false);
+              setShowMpesaDialog(true);
+            }}          
+        >
+          <div className="flex items-center justify-center gap-3">
+            <CreditCard className="w-6 h-6" />
+            M-Pesa
+          </div>
+        </Button>
+
+        <Button 
+          className="w-full py-8 text-lg bg-white border-2 border-green-600 hover:bg-green-50 text-green-600"
+          onClick={async () => {
+            try {
+              await completeSale('Cash');
+              setShowPayment(false);
+              setShowReceiptDialog(true);
+            } catch (error) {
+              alert('Payment failed: ' + error.message);
+            }
+          }}
+        >
+          <div className="flex items-center justify-center gap-3">
+            <Banknote className="w-6 h-6" />
+            Cash
+          </div>
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
+  
+        {/* Receipt Dialog */}
+        <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+          <DialogContent className="bg-white">
+            <DialogHeader>
+              <DialogTitle>Print Receipt</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-center mb-6">Would you like to print a receipt for this transaction?</p>
+              <DialogFooter>
+                <div className="flex gap-4 w-full">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setShowReceiptDialog(false)}
+                  >
+                    No, Skip
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={() => {
+                      printReceipt();
+                      setShowReceiptDialog(false);
+                    }}
+                  >
+                    Yes, Print
+                  </Button>
+                </div>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* Sale Details Dialog */}
+<Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
+  <DialogContent className="bg-white">
     <DialogHeader>
       <DialogTitle>Sale Details</DialogTitle>
     </DialogHeader>
@@ -462,7 +600,47 @@ const SalesManagement = () => {
       </div>
     )}
   </DialogContent>
-</Dialog> 
+</Dialog>
+
+{/* M-Pesa Payment Dialog */}
+<Dialog open={showMpesaDialog} onOpenChange={setShowMpesaDialog}>
+  <DialogContent className="bg-white max-w-sm">
+    <DialogHeader>
+      <DialogTitle className="text-xl text-center text-blue-500">M-Pesa Payment</DialogTitle>
+    </DialogHeader>
+    <div className="pt-4">
+      <div className="text-center text-2xl font-bold mb-8">
+        Total: KSH {total.toFixed(2)}
+      </div>
+      <div className="space-y-4">
+      <div>
+    <label className="text-sm font-medium">Enter M-Pesa Phone Number</label>
+    <Input
+      type="tel"
+      placeholder="e.g., 0712345678"
+      value={phoneNumber}
+      onChange={(e) => {
+        setPhoneNumber(e.target.value);
+        setPhoneError('');
+      }}
+      className={`mt-1 ${phoneError ? 'border-red-500' : ''}`}
+    />
+    {phoneError && (
+      <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+    )}
+  </div>
+        <Button 
+          className="w-full py-3 text-lg bg-blue-600 hover:bg-blue-700 text-black"
+          onClick={handleMpesaPayment}
+          disabled={!phoneNumber || isProcessingPayment}
+        >
+
+          {isProcessingPayment ? 'Processing Payment...' : 'Pay Now'}
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
       </div>
     </div>
   );
