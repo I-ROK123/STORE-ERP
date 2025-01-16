@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Plus, Search, Filter, Download, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Download, Edit, Trash2, Package2, Tag, Loader2  } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import {
@@ -204,16 +204,38 @@ const handleSaveEdit = async (editedProduct) => {
   const uniqueCategories = [...new Set(inventory.map(item => item.category))];
   const uniqueBrands = [...new Set(inventory.map(item => item.brand))];
 
-  if (loading) return <div className="flex items-center justify-center h-64">Loading...</div>;
-  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="text-center space-y-4">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
+        <p className="text-gray-600">Loading inventory...</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex items-center justify-center h-64 bg-red-50 rounded-lg">
+      <div className="text-center space-y-2 p-6">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-red-600 font-medium">Error: {error}</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Inventory Management</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+          <p className="text-gray-500">Manage your products and stock levels</p>
+        </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
               <Plus className="w-4 h-4 mr-2" />
               Add Product
             </Button>
@@ -355,8 +377,9 @@ const handleSaveEdit = async (editedProduct) => {
                 </DialogClose>
                 <Button 
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-black"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                 >
+                  <Plus className="w-4 h-4 mr-2" />
                   Add Product
                 </Button>
               </div>
@@ -554,24 +577,29 @@ const handleSaveEdit = async (editedProduct) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-gray-500" />
+              <div className="p-2 bg-blue-50 rounded-full">
+                <Search className="w-4 h-4 text-blue-600" />
+              </div>
               <Input 
                 placeholder="Search products..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="border-gray-200 focus:ring-blue-500"
               />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+              <div className="p-2 bg-purple-50 rounded-full">
+                <Tag className="w-4 h-4 text-purple-600" />
+              </div>
               <select 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md border-gray-200 focus:ring-purple-500 focus:border-purple-500"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -583,12 +611,15 @@ const handleSaveEdit = async (editedProduct) => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+              <div className="p-2 bg-green-50 rounded-full">
+                <Package2 className="w-4 h-4 text-green-600" />
+              </div>
               <select 
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded-md border-gray-200 focus:ring-green-500 focus:border-green-500"
                 value={selectedBrand}
                 onChange={(e) => setSelectedBrand(e.target.value)}
               >
@@ -600,82 +631,91 @@ const handleSaveEdit = async (editedProduct) => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
             <Button 
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700"
+              className="w-full bg-gray-800 hover:bg-gray-900 text-white shadow-sm"
               onClick={handleExport}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              Export Data
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Current Stock</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="bg-gray-50 border-b">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-semibold text-gray-800">Current Stock</CardTitle>
+            <div className="text-sm text-gray-500">
+              {filteredInventory.length} items found
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Barcode</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Category</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Sub-Category</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Brand</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Quantity</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Threshold</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Price (KSH)</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Barcode</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Brand</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Threshold</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price (KSH)</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-  {filteredInventory.map((item) => (
-    <tr key={item.product_id} className="border-b hover:bg-gray-50">
-      <td className="px-4 py-3 text-sm">{item.barcode}</td>
-      <td className="px-4 py-3 text-sm">{item.category}</td>
-      <td className="px-4 py-3 text-sm">{item.name}</td>
-      <td className="px-4 py-3 text-sm">{item.brand}</td>
-      <td className={`px-4 py-3 text-sm ${
-        item.stock_quantity <= item.reorder_level ? 'text-red-600' : ''
-      }`}>
-        {item.stock_quantity}
-      </td>
-      <td className="px-4 py-3 text-sm">{item.reorder_level}</td>
-      <td className="px-4 py-3 text-sm">{item.unit_price}</td>
-      <td className="px-4 py-3 text-sm">
-        <span className={`px-2 py-1 rounded text-sm ${
-          item.stock_quantity <= item.reorder_level ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-        }`}>
-          {item.stock_quantity <= item.reorder_level ? 'Low Stock' : 'In Stock'}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-sm">
-  <div className="flex gap-2">
-    <Button 
-      variant="ghost" 
-      size="sm"
-      onClick={() => handleEdit(item)}
-    >
-      <Edit className="w-4 h-4" />
-    </Button>
-    <Button 
-      variant="ghost" 
-      size="sm" 
-      className="text-red-600"
-      onClick={() => handleDelete(item.product_id)}
-    >
-      <Trash2 className="w-4 h-4" />
-    </Button>
-  </div>
-</td>
-    </tr>
-  ))}
-</tbody>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredInventory.map((item) => (
+                  <tr key={item.product_id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{item.barcode}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.category}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.brand}</td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                      item.stock_quantity <= item.reorder_level ? 'text-red-600' : 'text-gray-900'
+                    }`}>
+                      {item.stock_quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.reorder_level}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.unit_price}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        item.stock_quantity <= item.reorder_level 
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {item.stock_quantity <= item.reorder_level ? 'Low Stock' : 'In Stock'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDelete(item.product_id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </CardContent>

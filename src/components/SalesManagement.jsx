@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Printer, CreditCard, Loader2, Banknote } from 'lucide-react';
+import {  Search, ShoppingCart, Printer, CreditCard, Loader2, Banknote, 
+  TrendingUp, Package2, Users, CircleDollarSign, ArrowUpRight  } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -301,173 +302,287 @@ const handleMpesaPayment = async () => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6" style={{ height: "calc(100vh - 2rem)" }}>
-      {/* Products Section */}
-      <div className="lg:col-span-2 flex flex-col gap-6">
-        <div className="flex gap-4">
-          <Input 
-            placeholder="Scan barcode or search product..." 
-            className="flex-1"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Button>
-            <Search className="w-4 h-4" />
-          </Button>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Header Section with Stats */}
+      <div className="p-6 space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <CircleDollarSign className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Sales Dashboard</h1>
+                <p className="text-gray-500">Manage transactions and track sales</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              <span className="text-sm text-green-700">Live Updates</span>
+            </div>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+              <Package2 className="w-4 h-4 mr-2" />
+              Manage Products
+            </Button>
+          </div>
         </div>
-        
-  
-        <Card className="flex-1 min-h-0">
-          <CardHeader className="border-b">
-            <CardTitle>Products</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[calc(100%-5rem)] overflow-auto">
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredProducts.map(product => (
-                  <div 
-                    key={`product-${product.product_id}`}
-                    className="p-4 border rounded hover:bg-gray-50 cursor-pointer"
-                    onClick={() => product.stock_quantity > 0 && addToCart(product)}
-                  >
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-sm text-gray-500">
-                      KSH {Number(product.unit_price).toFixed(2)}
-                    </div>
-                    <div className={`text-sm ${product.stock_quantity === 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                      Stock: {product.stock_quantity}
-                    </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Today's Sales</p>
+                  <h3 className="text-2xl font-bold text-gray-900">KSH {total.toFixed(2)}</h3>
+                  <div className="flex items-center gap-1 text-green-600 text-sm">
+                    <ArrowUpRight className="w-4 h-4" />
+                    <span>12% from yesterday</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-  
-      {/* Cart and Recent Sales Section */}
-      <div className="flex flex-col space-y-6">
-        {/* Cart Card */}
-        <Card className="flex-1 h-64">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Current Sale
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
-            <div className="space-y-4">
-              <div className=" h-64 overflow-y-auto" >
-                {cart.map((item, index) => (
-                  <div 
-                    key={`cart-${item.product_id}-${index}`}
-                    className="flex justify-between items-center py-2 border-b"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-gray-500">
-                        KSH {Number(item.unit_price).toFixed(2)} x 
-                        <input
-                          type="number"
-                          min="1"
-                          max={item.stock_quantity}
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(index, parseInt(e.target.value))}
-                          className="w-16 ml-2 px-1 border rounded"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="font-medium">
-                        KSH {(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFromCart(index)}
-                        className="text-red-500"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-  
-              <div className="pt-4 border-t">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span>KSH {total.toFixed(2)}</span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* check out button*/}
-              <Button 
-                className="w-full h-12 text-lg bg-blue-600"
-                onClick={() => setShowPayment(true)}
-                disabled={cart.length === 0}
-              >
-                Checkout
-              </Button>
+          <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-indigo-50 p-3 rounded-lg">
+                  <ShoppingCart className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Active Cart</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{cart.length} items</h3>
+                  <p className="text-sm text-indigo-600">KSH {total.toFixed(2)} total</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <Users className="w-6 h-6 text-purple-800" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Recent Sales</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{recentSales.length}</h3>
+                  <p className="text-sm text-purple-800">Last 24 hours</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-sm hover:shadow-md transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <Package2 className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Products</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{products.length}</h3>
+                  <p className="text-sm text-green-600">{products.filter(p => p.stock_quantity > 0).length} in stock</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Products Section */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex gap-4">
+              <Input 
+                placeholder="Search products or scan barcode..." 
+                className="flex-1"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                prefix={<Search className="w-4 h-4 text-gray-400" />}
+              />
             </div>
-          </CardContent>
-        </Card>
-  
-        {/* Recent Sales Card */}
-        <Card className="flex-1 min-h-0">
-          <CardHeader className="border-b">
-            <CardTitle>Recent Sales</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[calc(100%-5rem)] overflow-auto">
-            <div className="space-y-2">
-              {recentSales.map((sale) => {
-                const itemsCount = Array.isArray(sale.items) 
-                  ? sale.items.length 
-                  : (typeof sale.items === 'string' 
-                    ? JSON.parse(sale.items).length 
-                    : 0);
-  
-                return (
-                  <div
-                    key={sale.id}
-                    className="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                    onClick={() => viewSaleDetails(sale)}
-                  >
-                    <div>
-                      <div className="font-medium">KSH {Number(sale.total).toFixed(2)}</div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(sale.created_at).toLocaleString()} • {itemsCount} items
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm px-2 py-1 rounded ${
-                        sale.payment_method === 'M-Pesa' 
-                          ? 'bg-blue-100 text-blue-600' 
-                          : 'bg-green-100 text-green-600'
-                      }`}>
-                        {sale.payment_method}
-                      </span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          printPastSale(sale);
-                        }}
+
+            <Card className="bg-white shadow-sm">
+              <CardHeader className="border-b bg-gray-50">
+                <CardTitle className="text-lg font-semibold">Available Products</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {loading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {filteredProducts.map(product => (
+                      <div 
+                        key={`product-${product.product_id}`}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                          product.stock_quantity > 0 
+                            ? 'border-gray-200 hover:border-blue-400 cursor-pointer'
+                            : 'border-red-200 opacity-50'
+                        }`}
+                        onClick={() => product.stock_quantity > 0 && addToCart(product)}
                       >
-                        <Printer className="w-4 h-4" />
-                      </Button>
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="text-lg font-bold text-blue-900">
+                          KSH {Number(product.unit_price).toFixed(2)}
+                        </div>
+                        <div className={`text-sm mt-2 ${
+                          product.stock_quantity === 0 
+                            ? 'text-red-500' 
+                            : product.stock_quantity < 10 
+                              ? 'text-orange-500'
+                              : 'text-green-600'
+                        }`}>
+                          {product.stock_quantity === 0 
+                            ? 'Out of Stock'
+                            : `${product.stock_quantity} in stock`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Cart and Recent Sales Section */}
+          <div className="space-y-6">
+            {/* Current Cart */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader className="border-b bg-gray-50">
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                  <ShoppingCart className="w-5 h-5" />
+                  Current Sale
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {cart.map((item, index) => (
+                      <div 
+                        key={`cart-${item.product_id}-${index}`}
+                        className="py-3 first:pt-0 last:pb-0"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-gray-900">{item.name}</div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              KSH {Number(item.unit_price).toFixed(2)} × 
+                              <input
+                                type="number"
+                                min="1"
+                                max={item.stock_quantity}
+                                value={item.quantity}
+                                onChange={(e) => updateQuantity(index, parseInt(e.target.value))}
+                                className="w-16 ml-2 px-2 py-1 border rounded"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <div className="font-medium text-gray-900">
+                              KSH {(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <div className="flex justify-between items-center text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-blue-750">KSH {total.toFixed(2)}</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+
+                  <Button 
+        className="w-full h-14 text-lg bg-green-600 hover:bg-green-700 text-black shadow-md
+                   transition-all duration-200 relative overflow-hidden group"
+        onClick={() => setShowPayment(true)}
+        disabled={cart.length === 0}
+      >
+        <span className="flex items-center justify-center gap-2">
+          {cart.length === 0 ? (
+            'Add items to cart'
+          ) : (
+            <>
+              Complete Sale
+              <span className="text-sm opacity-75">
+                (KSH {total.toFixed(2)})
+              </span>
+            </>
+          )}
+        </span>
+      </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Sales */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader className="border-b bg-gray-50">
+                <CardTitle className="text-lg font-semibold">Recent Sales</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {recentSales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                      onClick={() => viewSaleDetails(sale)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            KSH {Number(sale.total).toFixed(2)}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {new Date(sale.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm px-2 py-1 rounded-full ${
+                            sale.payment_method === 'M-Pesa' 
+                              ? 'bg-blue-100 text-blue-600' 
+                              : 'bg-green-100 text-green-600'
+                          }`}>
+                            {sale.payment_method}
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              printPastSale(sale);
+                            }}
+                          >
+                            <Printer className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
   
         {/* Payment Dialog */}
 
@@ -641,7 +756,7 @@ const handleMpesaPayment = async () => {
     </div>
   </DialogContent>
 </Dialog>
-      </div>
+      
     </div>
   );
 };
